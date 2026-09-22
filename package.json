@@ -1,0 +1,10 @@
+{
+  "name": "is-this-startup-stupid",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev.js"
+  },
+  "engines": { "node": ">=20" }
+}
