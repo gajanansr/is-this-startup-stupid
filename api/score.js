@@ -5,6 +5,15 @@
 //
 // Docs: https://openrouter.ai/api/v1/systemone
 
+import { createHash } from "node:crypto";
+import { rateLimit, cacheGet, cacheSet, usingRedis } from "../lib/store.js";
+
+if (!usingRedis) {
+  console.warn(
+    "No UPSTASH_REDIS_REST_URL — rate limiting is in-memory and resets on cold start."
+  );
+}
+
 const MODEL = process.env.JEV_MODEL || "typesafe/jev-1.13";
 const ENDPOINT = "https://openrouter.ai/api/v1/systemone";
 
@@ -82,19 +91,19 @@ function toPercent(answer, labelCount) {
   return Math.max(2, Math.min(99, Math.round(pct)));
 }
 
-// --- crude per-IP rate limit; resets when the function cold-starts ---
-const HITS = new Map();
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 12;
+// Two windows: a burst guard and a daily ceiling.
+const WINDOWS = [
+  { name: "minute", seconds: 60, max: 10 },
+  { name: "day", seconds: 86_400, max: 60 },
+];
 
-function rateLimited(ip) {
-  const now = Date.now();
-  const hits = (HITS.get(ip) || []).filter((t) => now - t < WINDOW_MS);
-  hits.push(now);
-  HITS.set(ip, hits);
-  if (HITS.size > 5000) HITS.clear(); // keep memory bounded
-  return hits.length > MAX_PER_WINDOW;
-}
+// Identical ideas deserve identical scores, so serve repeats from cache.
+const CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
+const cacheKey = (idea) =>
+  createHash("sha256")
+    .update(idea.toLowerCase().replace(/\s+/g, " ").trim())
+    .digest("hex")
+    .slice(0, 32);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -106,10 +115,14 @@ export default async function handler(req, res) {
     (req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
     req.socket?.remoteAddress ||
     "unknown";
-  if (rateLimited(ip)) {
-    return res
-      .status(429)
-      .json({ error: "Slow down — too many ideas in one minute." });
+  const limit = await rateLimit(ip, WINDOWS);
+  if (!limit.ok) {
+    return res.status(429).json({
+      error:
+        limit.scope === "day"
+          ? "That's enough startups for one day. Come back tomorrow."
+          : "Slow down — too many ideas in one minute.",
+    });
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -118,11 +131,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Write a few more words." });
   }
 
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
     return res
       .status(500)
       .json({ error: "OPENROUTER_API_KEY is not set on the server." });
+  }
+
+  const key = cacheKey(idea);
+  const cached = await cacheGet(key);
+  if (cached) {
+    return res.status(200).json({ ...cached, cached: true, cost: 0 });
   }
 
   const controller = new AbortController();
@@ -133,7 +152,7 @@ export default async function handler(req, res) {
       method: "POST",
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer":
           process.env.PUBLIC_URL || "https://is-this-startup-stupid.local",
@@ -172,13 +191,15 @@ export default async function handler(req, res) {
       confidence[k] = Number(answers[k].confidence ?? 0);
     }
 
-    return res.status(200).json({
+    const payload = {
       scores,
       confidence,
       source: "jev",
       model: data.model || MODEL,
       cost: data.usage?.cost ?? null,
-    });
+    };
+    await cacheSet(key, { ...payload, cost: null }, CACHE_TTL);
+    return res.status(200).json(payload);
   } catch (err) {
     const aborted = err.name === "AbortError";
     console.error("jev call failed", err);

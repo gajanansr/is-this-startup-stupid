@@ -56,11 +56,25 @@ request/response wrapper.
 
 ## Cost and abuse
 
-Jev is $0.042 per 1M input tokens with free output. One evaluation is a few hundred
-tokens — a fraction of a cent per thousand plays. The real risk is someone hammering the
-endpoint, so `api/score.js` rate-limits to **12 requests per IP per minute**, in memory.
-That resets on every cold start, so if this ever gets real traffic, move the limiter to
-Redis or Vercel KV and set a spend cap on the OpenRouter key.
+One evaluation costs about **$0.000029** — roughly 170,000 plays per $5 of credit. Abuse
+here is annoying rather than expensive, which is why there is no login and no email gate:
+both would cost more in lost reach than the money they would protect.
+
+Four layers instead, cheapest first:
+
+1. **A spend cap on the OpenRouter key.** The real backstop. Worst case becomes "the site
+   stops working", never "you get a bill". Set it in the OpenRouter dashboard.
+2. **Rate limiting** — 10 requests per IP per minute, 60 per day, in `api/score.js`.
+   Backed by Upstash Redis when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+   are set, and by an in-memory map otherwise. **Set them before deploying**: serverless
+   cold starts wipe the in-memory version, which makes it close to useless in production.
+   Redis failures deliberately fail *open* — an outage should degrade to "unlimited",
+   not to "site down", because the spend cap is already catching the money.
+3. **Caching by idea text** (30 days). The same idea always deserves the same score, and
+   everybody types "Uber for dogs". Keys are a hash of the lowercased,
+   whitespace-collapsed idea, so casing and spacing variants share one entry.
+4. **Vercel Attack Challenge Mode** — a free toggle in the Vercel dashboard that stops
+   naive bot floods without adding friction for real visitors.
 
 Ideas are truncated to 300 characters before they reach the API.
 
@@ -70,4 +84,5 @@ Ideas are truncated to 300 characters before they reach the API.
 |---|---|
 | `public/index.html` | The whole front end — CRT chassis, layout, roast bank, fetch |
 | `api/score.js` | The Jev call, rubrics, 0–100 mapping, rate limit |
+| `lib/store.js` | Upstash-backed rate limiting and cache, with in-memory fallback |
 | `dev.js` | Dependency-free local server that mimics the Vercel routing |
