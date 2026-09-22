@@ -70,7 +70,9 @@ Four layers instead, cheapest first:
    to actually cost something — replaying a cached idea is free, so it shouldn't burn
    anyone's quota.
    Both are backed by Upstash Redis when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
-   are set, and by an in-memory map otherwise. **Set them before deploying**: serverless
+   are set, and by an in-memory map otherwise. The spend guard checks the counters
+   *without* incrementing and only consumes quota once the request is committed to
+   calling Jev — otherwise retrying after a rejection would silently eat the daily 20. **Set them before deploying**: serverless
    cold starts wipe the in-memory version, which makes it close to useless in production.
    Redis failures deliberately fail *open* — an outage should degrade to "unlimited",
    not to "site down", because the spend cap is already catching the money.

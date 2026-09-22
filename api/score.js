@@ -6,7 +6,14 @@
 // Docs: https://openrouter.ai/api/v1/systemone
 
 import { createHash } from "node:crypto";
-import { rateLimit, cacheGet, cacheSet, usingRedis } from "../lib/store.js";
+import {
+  rateLimit,
+  checkLimit,
+  consumeLimit,
+  cacheGet,
+  cacheSet,
+  usingRedis,
+} from "../lib/store.js";
 
 if (!usingRedis) {
   console.warn(
@@ -143,7 +150,9 @@ export default async function handler(req, res) {
   }
 
   // Past here we are about to spend money, so the tight limit applies.
-  const spend = await rateLimit(ip, SPEND);
+  // Check without consuming: a rejected request must not eat anyone's quota,
+  // or retrying after a "come back later" silently burns the daily 20.
+  const spend = await checkLimit(ip, SPEND);
   if (!spend.ok) {
     return res.status(429).json({
       error:
@@ -152,6 +161,9 @@ export default async function handler(req, res) {
           : "Come back later \u2014 it costs too much for this stupid startup to run.",
     });
   }
+
+  // Committed to spending now, so count it.
+  await consumeLimit(ip, SPEND);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);
