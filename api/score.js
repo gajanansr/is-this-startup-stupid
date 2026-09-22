@@ -91,10 +91,13 @@ function toPercent(answer, labelCount) {
   return Math.max(2, Math.min(99, Math.round(pct)));
 }
 
-// Two windows: a burst guard and a daily ceiling.
-const WINDOWS = [
-  { name: "minute", seconds: 60, max: 10 },
-  { name: "day", seconds: 86_400, max: 60 },
+// Two tiers. TRAFFIC guards the server against floods and applies to every
+// request. SPEND guards the wallet and applies only to calls that actually
+// reach Jev — a cache hit costs nothing, so it should not burn anyone's quota.
+const TRAFFIC = [{ name: "flood", seconds: 60, max: 30 }];
+const SPEND = [
+  { name: "minute", seconds: 60, max: 2 },
+  { name: "day", seconds: 86_400, max: 40 },
 ];
 
 // Identical ideas deserve identical scores, so serve repeats from cache.
@@ -115,14 +118,9 @@ export default async function handler(req, res) {
     (req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
     req.socket?.remoteAddress ||
     "unknown";
-  const limit = await rateLimit(ip, WINDOWS);
-  if (!limit.ok) {
-    return res.status(429).json({
-      error:
-        limit.scope === "day"
-          ? "That's enough startups for one day. Come back tomorrow."
-          : "Slow down — too many ideas in one minute.",
-    });
+  const flood = await rateLimit(ip, TRAFFIC);
+  if (!flood.ok) {
+    return res.status(429).json({ error: "Easy. Come back in a minute." });
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -142,6 +140,17 @@ export default async function handler(req, res) {
   const cached = await cacheGet(key);
   if (cached) {
     return res.status(200).json({ ...cached, cached: true, cost: 0 });
+  }
+
+  // Past here we are about to spend money, so the tight limit applies.
+  const spend = await rateLimit(ip, SPEND);
+  if (!spend.ok) {
+    return res.status(429).json({
+      error:
+        spend.scope === "day"
+          ? "That's your lot for today. This stupid startup has a budget."
+          : "Come back later \u2014 it costs too much for this stupid startup to run.",
+    });
   }
 
   const controller = new AbortController();

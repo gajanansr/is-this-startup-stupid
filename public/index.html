@@ -423,8 +423,15 @@
   }
   tick(); setInterval(tick,20000);
 
-  /* open on a real verdict, not an empty shell */
-  run();
+  /* Open on a real verdict without spending a call. These are genuine Jev
+     scores for the placeholder idea, captured once and baked in, so the page
+     never looks empty and a visitor's first click is their first API call. */
+  render(
+    "Uber but for borrowing clothes from your neighbors",
+    {novelty:47,money:35,build:57,viral:58,stupid:66,fund:48},
+    {novelty:.85,money:.56,build:.70,viral:.43,stupid:.57},
+    "Sample verdict \u2014 press EVALUATE to score your own"
+  );
 })();
 </script>
 </body>

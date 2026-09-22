@@ -64,8 +64,12 @@ Four layers instead, cheapest first:
 
 1. **A spend cap on the OpenRouter key.** The real backstop. Worst case becomes "the site
    stops working", never "you get a bill". Set it in the OpenRouter dashboard.
-2. **Rate limiting** — 10 requests per IP per minute, 60 per day, in `api/score.js`.
-   Backed by Upstash Redis when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+2. **Rate limiting**, in two tiers, because clicks and money are different things.
+   A *traffic* guard (30/min per IP) applies to everything and stops floods. A *spend*
+   guard (**2/min, 40/day**) applies only after a cache miss, when the request is about
+   to actually cost something — replaying a cached idea is free, so it shouldn't burn
+   anyone's quota.
+   Both are backed by Upstash Redis when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
    are set, and by an in-memory map otherwise. **Set them before deploying**: serverless
    cold starts wipe the in-memory version, which makes it close to useless in production.
    Redis failures deliberately fail *open* — an outage should degrade to "unlimited",
@@ -75,6 +79,9 @@ Four layers instead, cheapest first:
    whitespace-collapsed idea, so casing and spacing variants share one entry.
 4. **Vercel Attack Challenge Mode** — a free toggle in the Vercel dashboard that stops
    naive bot floods without adding friction for real visitors.
+
+The page also opens on a baked-in sample verdict rather than scoring something on load.
+A pageview costs nothing; a visitor's first click is their first API call.
 
 Ideas are truncated to 300 characters before they reach the API.
 
