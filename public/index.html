@@ -8,6 +8,12 @@
 <meta property="og:title" content="Is This Startup Stupid?">
 <meta property="og:description" content="Five typed scores, one call. Find out how stupid your idea is — and how fundable it is anyway.">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://isthisstartupstupid.vercel.app/icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:creator" content="@gajananrx">
+<meta name="theme-color" content="#0b1030">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
@@ -64,8 +70,15 @@
     background:repeating-linear-gradient(to right,#2e2921 0 3px,#6d6355 3px 8px);box-shadow:inset 0 0 8px rgba(0,0,0,.7)}
   .led{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:8px;letter-spacing:.1em;color:#e7ddc8}
   .led b{width:8px;height:8px;border-radius:50%;background:var(--pink);box-shadow:0 0 9px var(--pink)}
-  .plate{display:flex;justify-content:space-between;gap:12px;padding:7px 4px 2px;
+  .plate{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    flex-wrap:wrap;padding:7px 4px 2px;
     font-family:var(--display);font-size:9px;letter-spacing:.12em;color:#efe6d2;flex:none}
+  .plate a{color:#efe6d2;text-decoration:none;border-bottom:1px dotted rgba(239,230,210,.5)}
+  .plate a:hover{color:#fff;border-bottom-color:#fff}
+  .plate a:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .credits{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .credits .dot{opacity:.45}
+  @media (max-width:520px){ .plate .model{display:none} }
 
   .osd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;
     font-family:var(--display);font-size:10px;letter-spacing:.1em;color:var(--cyan);
@@ -262,7 +275,17 @@
       <div class="led"><b></b> POWER</div>
     </div>
   </div>
-  <div class="plate"><span>ZENTRAK 21 STEREO COLOR</span><span>PRO-VISION</span></div>
+  <div class="plate">
+    <span class="model">ZENTRAK 21 STEREO COLOR</span>
+    <span class="credits">
+      <span>BUILT BY <a href="https://x.com/gajananrx" target="_blank" rel="noopener">@GAJANANRX</a></span>
+      <span class="dot">&bull;</span>
+      <a href="https://github.com/gajanansr/is-this-startup-stupid" target="_blank" rel="noopener">SOURCE</a>
+      <span class="dot">&bull;</span>
+      <span>SCORED BY JEV</span>
+    </span>
+    <span class="model">PRO-VISION</span>
+  </div>
 </div>
 
 <script>

@@ -95,3 +95,9 @@ Ideas are truncated to 300 characters before they reach the API.
 | `api/score.js` | The Jev call, rubrics, 0–100 mapping, rate limit |
 | `lib/store.js` | Upstash-backed rate limiting and cache, with in-memory fallback |
 | `dev.js` | Dependency-free local server that mimics the Vercel routing |
+| `scripts/make-icons.mjs` | Renders the 16x16 pixel art to PNG icons (`node scripts/make-icons.mjs`) |
+
+## Credits
+
+Built by [@gajananrx](https://x.com/gajananrx) · [github.com/gajanansr](https://github.com/gajanansr)
+Scored by [Jev](https://openrouter.ai/typesafe/jev-1.13), TypeSafe's System One model.
