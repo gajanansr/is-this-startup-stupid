@@ -66,7 +66,7 @@ Four layers instead, cheapest first:
    stops working", never "you get a bill". Set it in the OpenRouter dashboard.
 2. **Rate limiting**, in two tiers, because clicks and money are different things.
    A *traffic* guard (30/min per IP) applies to everything and stops floods. A *spend*
-   guard (**2/min, 40/day**) applies only after a cache miss, when the request is about
+   guard (**5/min, 20/day**) applies only after a cache miss, when the request is about
    to actually cost something — replaying a cached idea is free, so it shouldn't burn
    anyone's quota.
    Both are backed by Upstash Redis when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`

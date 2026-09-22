@@ -96,8 +96,8 @@ function toPercent(answer, labelCount) {
 // reach Jev — a cache hit costs nothing, so it should not burn anyone's quota.
 const TRAFFIC = [{ name: "flood", seconds: 60, max: 30 }];
 const SPEND = [
-  { name: "minute", seconds: 60, max: 2 },
-  { name: "day", seconds: 86_400, max: 40 },
+  { name: "minute", seconds: 60, max: 5 },
+  { name: "day", seconds: 86_400, max: 20 },
 ];
 
 // Identical ideas deserve identical scores, so serve repeats from cache.
