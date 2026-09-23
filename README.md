@@ -102,6 +102,15 @@ Ideas are truncated to 300 characters before they reach the API.
 | `media/promo.mp4` | 7s silent demo loop for social posts |
 | `scripts/make-icons.mjs` | Renders the 16x16 pixel art to PNG icons (`node scripts/make-icons.mjs`) |
 
+## Analytics
+
+Vercel Web Analytics is wired in as two script tags at the bottom of
+`public/index.html`. The `@vercel/analytics` npm package is deliberately **not**
+installed — it needs a bundler, and this project has no build step and no
+dependencies. Vercel serves `/_vercel/insights/script.js` itself once Analytics is
+enabled for the project in the dashboard; until then the request 404s harmlessly and
+the page is unaffected.
+
 ## Credits
 
 Built by [@gajananrx](https://x.com/gajananrx) · [github.com/gajanansr](https://github.com/gajanansr)
