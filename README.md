@@ -82,6 +82,10 @@ Four layers instead, cheapest first:
 4. **Vercel Attack Challenge Mode** — a free toggle in the Vercel dashboard that stops
    naive bot floods without adding friction for real visitors.
 
+On phones the verdict sits below the input, so the page scrolls it into view after a
+score — a tap that appears to do nothing reads as a broken app. Smooth scrolling silently
+no-ops in some embedded contexts, so there is a fallback that lands the jump regardless.
+
 The page also opens on a baked-in sample verdict rather than scoring something on load.
 A pageview costs nothing; a visitor's first click is their first API call.
 

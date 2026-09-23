@@ -205,7 +205,36 @@
     .row{grid-template-columns:92px minmax(0,1fr) 32px}
     .row .c{display:none}
   }
-  @media (max-width:420px){.heroes{grid-template-columns:1fr}}
+  /* ---------- Phones ---------- */
+  @media (max-width:560px){
+    body{padding:8px 10px}
+    .tv{padding:8px 8px 3px;border-radius:12px}
+    .screen{padding:12px 12px}
+    .sub .long{display:none}
+    .sub{font-size:13.5px}
+    h1{font-size:clamp(26px,9vw,40px)}
+
+    /* a thumb needs a full-width button, not a 118px one */
+    .go{width:100%;min-height:48px;font-size:13px}
+    textarea{height:76px;font-size:16px}       /* 16px stops iOS zooming on focus */
+    .chip{padding:7px 10px;font-size:12px}      /* bigger tap targets */
+
+    /* the two hero numbers belong side by side — they are the headline */
+    .heroes{grid-template-columns:1fr 1fr}
+    .hbox{padding:11px 6px}
+    .hbox .n{font-size:clamp(40px,13vw,60px)}
+
+    .rows{padding:4px 10px}
+    .row{grid-template-columns:82px minmax(0,1fr) 30px;gap:8px;padding:7px 0}
+    .bar{height:14px}
+    .osd .rec{display:none}                     /* stops the OSD wrapping */
+    .ticker{font-size:9px}
+    .spec{padding:10px}
+    .spec .acts{width:100%;margin-left:0}
+    .act{flex:1;min-height:40px}
+    .stack{display:none}                        /* decorative speaker: not worth the height */
+    .plate{justify-content:center;text-align:center;font-size:8px}
+  }
 </style>
 </head>
 <body>
@@ -225,7 +254,7 @@
       <div class="left">
         <div class="tag">AS SEEN ON TV</div>
         <h1>IS THIS STARTUP <em>STUPID?</em></h1>
-        <p class="sub">Five typed questions go out in <b>one call</b> and come back as numbers with confidence &mdash; no essay, no parsing. Then the math nobody asks for: how dumb it is, versus how fundable it is anyway.</p>
+        <p class="sub">Five typed questions go out in <b>one call</b> and come back as numbers with confidence.<span class="long"> No essay, no parsing. Then the math nobody asks for: how dumb it is, versus how fundable it is anyway.</span></p>
 
         <div class="console">
           <label class="lbl" for="idea">&gt; ENTER IDEA</label>
@@ -303,7 +332,7 @@
   var el=function(id){return document.getElementById(id);};
   var METRICS=["novelty","money","build","viral","stupid"];
   var rows=document.querySelectorAll("#rows .row");
-  var current=null, busy=false;
+  var current=null, busy=false, scrollOnRender=false;
 
   /* ---------- fundability: our math, not the model's ---------- */
   function clamp(n){return Math.max(2,Math.min(99,Math.round(n)));}
@@ -380,6 +409,31 @@
     var loudest=METRICS.reduce(function(a,b){return s[b]>s[a]?b:a;});
     el("roast").textContent=pick(LINES[loudest][band(s[loudest])],text);
     el("meter").textContent = meta || "";
+
+    /* On phones the verdict sits below the fold, so a tap on EVALUATE looks
+       like nothing happened. Scroll it into view — but only when the user
+       asked for it, never on the sample verdict the page opens with. */
+    if (scrollOnRender && window.matchMedia("(max-width:880px)").matches) {
+      var tier = document.querySelector(".tier");
+      if (tier) {
+        var target = Math.max(0,
+          tier.getBoundingClientRect().top + (window.scrollY || 0) - 8);
+        var smooth = !window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+        try {
+          window.scrollTo({ top: target, behavior: smooth ? "smooth" : "auto" });
+        } catch (e) {
+          window.scrollTo(0, target);
+        }
+        /* Smooth scrolling silently no-ops in some embedded and background
+           contexts, which would leave the verdict off-screen. Land it either
+           way. */
+        setTimeout(function () {
+          if (Math.abs((window.scrollY || 0) - target) > 40) {
+            window.scrollTo(0, target);
+          }
+        }, 500);
+      }
+    }
   }
 
   async function run(){
@@ -387,7 +441,7 @@
     var box=el("idea");
     var text=(box.value||box.placeholder).trim().slice(0,300);
     var btn=el("run");
-    busy=true; btn.disabled=true; btn.textContent="TRACKING…";
+    busy=true; scrollOnRender=true; btn.disabled=true; btn.textContent="TRACKING…";
     el("err").textContent=""; el("rec-label").textContent="ASK";
 
     try{
